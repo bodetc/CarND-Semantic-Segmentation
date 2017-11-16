@@ -11,8 +11,9 @@ import project_tests as tests
 c_norm = 0.001
 c_keep_prob = 0.6
 c_learning_rate = 0.001
-c_epochs = 30
-c_batch_size = 32
+c_epochs = 40
+c_batch_size = 10
+c_snapshot_filename = "./model_snapshot.ckpt"
 
 # Check TensorFlow Version
 assert LooseVersion(tf.__version__) >= LooseVersion(
@@ -124,7 +125,7 @@ tests.test_optimize(optimize)
 
 
 def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
-             correct_label, keep_prob, learning_rate, save = False):
+             correct_label, keep_prob, learning_rate, save=False):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
@@ -156,9 +157,11 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 
         print("loss ", loss, " at epoch ", epoch)
 
-        if save:
+        if save and epoch % 5 == 4:
+            print("Saving session...")
             saver = tf.train.Saver()
-            saver.save(sess, "./model_{}.ckpt".format(epoch))
+            saver.save(sess, c_snapshot_filename)
+            print("Session saved...")
 
 
 tests.test_train_nn(train_nn)
@@ -195,6 +198,14 @@ def run():
         layer_output = layers(layer3_out, layer4_out, layer7_out, num_classes)
         logits, training_operation, cross_entropy_loss = optimize(layer_output, correct_label, learning_rate,
                                                                   num_classes)
+
+        # load last trained snapshot, if it exists
+        if os.path.isfile(c_snapshot_filename+".index"):
+            print("Restoring model.")
+            saver = tf.train.Saver()
+            # Restore variables from disk.
+            saver.restore(sess, c_snapshot_filename)
+            print("Model restored.")
 
         # TODO: Train NN using the train_nn function
         train_nn(sess, c_epochs, c_batch_size, get_batches_fn, training_operation, cross_entropy_loss, image_input,
