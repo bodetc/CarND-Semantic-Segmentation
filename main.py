@@ -9,10 +9,11 @@ import project_tests as tests
 
 # Some constants definitions
 c_norm = 0.001
+c_stddev = 0.01
 c_keep_prob = 0.6
-c_learning_rate = 0.001
-c_epochs = 40
-c_batch_size = 10
+c_learning_rate = 0.0001
+c_epochs = 20
+c_batch_size = 2
 c_snapshot_filename = "./model_snapshot.ckpt"
 
 # Check TensorFlow Version
@@ -69,23 +70,28 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     # 1x1 convolutions of layers 7, 4 and 3
     layer7_conv = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, strides=(1, 1), padding="same",
+                                   kernel_initializer=tf.truncated_normal_initializer(stddev=c_stddev),
                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(c_norm))
 
     layer4_conv = tf.layers.conv2d(vgg_layer4_out, num_classes, 1, strides=(1, 1), padding="same",
+                                   kernel_initializer=tf.truncated_normal_initializer(stddev=c_stddev),
                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(c_norm))
 
     layer3_conv = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, strides=(1, 1), padding="same",
+                                   kernel_initializer=tf.truncated_normal_initializer(stddev=c_stddev),
                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(c_norm))
 
     # Upscale layer 7 convoluted and add to layer 4
 
     layer7_upscaled = tf.layers.conv2d_transpose(layer7_conv, num_classes, 4, strides=(2, 2), padding="same",
+                                                 kernel_initializer=tf.truncated_normal_initializer(stddev=c_stddev),
                                                  kernel_regularizer=tf.contrib.layers.l2_regularizer(c_norm))
     layer4_skip = tf.add(layer7_upscaled, layer4_conv)
 
     # Upscale layer 4 convoluted and add to layer 3
 
     layer4_upscaled = tf.layers.conv2d_transpose(layer4_skip, num_classes, 4, strides=(2, 2), padding="same",
+                                                 kernel_initializer=tf.truncated_normal_initializer(stddev=c_stddev),
                                                  kernel_regularizer=tf.contrib.layers.l2_regularizer(c_norm))
 
     layer3_skip = tf.add(layer4_upscaled, layer3_conv)
@@ -93,6 +99,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     # Upscale layer 3 to be back to the original image size
 
     layer3_upscaled = tf.layers.conv2d_transpose(layer3_skip, num_classes, 16, strides=(8, 8), padding="same",
+                                                 kernel_initializer=tf.truncated_normal_initializer(stddev=c_stddev),
                                                  kernel_regularizer=tf.contrib.layers.l2_regularizer(c_norm))
 
     # tf.Print(layer3_upscaled, [tf.shape(layer3_upscaled)])
@@ -200,7 +207,7 @@ def run():
                                                                   num_classes)
 
         # load last trained snapshot, if it exists
-        if os.path.isfile(c_snapshot_filename+".index"):
+        if os.path.isfile(c_snapshot_filename + ".index"):
             print("Restoring model.")
             saver = tf.train.Saver()
             # Restore variables from disk.
